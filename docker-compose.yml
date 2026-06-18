@@ -29,7 +29,7 @@ services:
       context: ./backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8099:8000"
     environment:
       DATABASE_URL: postgresql://dragones:dragones@db:5432/dragones
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
