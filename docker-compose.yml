@@ -1,0 +1,58 @@
+version: "3.9"
+
+# Portainer stack-from-git deployment
+# Env vars to set in Portainer UI:
+#   ADMIN_USERNAME, ADMIN_PASSWORD
+#   LANDING_USERNAME, LANDING_PASSWORD
+#   SECRET_KEY (random string)
+#   NEXT_PUBLIC_API_URL  (e.g. https://api.dragones.codanthic.com)
+#   CORS_ORIGINS         (e.g. https://dragones.codanthic.com)
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dragones
+      POSTGRES_USER: dragones
+      POSTGRES_PASSWORD: dragones
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dragones"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://dragones:dragones@db:5432/dragones
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme123}
+      LANDING_USERNAME: ${LANDING_USERNAME:-dragones}
+      LANDING_PASSWORD: ${LANDING_PASSWORD:-changeme123}
+      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://dragones.codanthic.com}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.dragones.codanthic.com}
+    restart: unless-stopped
+    ports:
+      - "3099:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

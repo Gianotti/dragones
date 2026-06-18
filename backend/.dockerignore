@@ -1,0 +1,6 @@
+.venv
+__pycache__
+*.pyc
+.env
+dragones.db
+alembic/versions/__pycache__
