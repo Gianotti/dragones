@@ -5,8 +5,9 @@ version: "3.9"
 #   ADMIN_USERNAME, ADMIN_PASSWORD
 #   LANDING_USERNAME, LANDING_PASSWORD
 #   SECRET_KEY (random string)
-#   NEXT_PUBLIC_API_URL  (e.g. https://api.dragones.codanthic.com)
-#   CORS_ORIGINS         (e.g. https://dragones.codanthic.com)
+#   NEXT_PUBLIC_API_URL       (e.g. https://api.dragones.codanthic.com)
+#   CORS_ORIGINS              (e.g. https://dragones.codanthic.com)
+#   CLOUDFLARE_TUNNEL_TOKEN   (Zero Trust → Tunnels → tu tunnel → token)
 
 services:
   db:
@@ -49,9 +50,15 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.dragones.codanthic.com}
     restart: unless-stopped
-    ports:
-      - "3099:3000"
     depends_on:
+      - backend
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - frontend
       - backend
 
 volumes:
