@@ -1,6 +1,8 @@
 import { getToken } from "./auth";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// En Docker: usa /api (Next.js rewrites a http://backend:8000)
+// En dev local sin Docker: seteá NEXT_PUBLIC_API_URL=http://localhost:8000 en .env.local
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();

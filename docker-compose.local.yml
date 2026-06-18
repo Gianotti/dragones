@@ -40,8 +40,6 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: http://localhost:8099
     ports:
       - "3099:3000"
     depends_on:
