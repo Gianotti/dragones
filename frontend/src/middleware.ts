@@ -12,16 +12,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/landing")) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-    return NextResponse.next();
-  }
+  // /landing handles its own auth inline (shows login form if no token)
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/landing/:path*"],
+  matcher: ["/admin/:path*"],
 };

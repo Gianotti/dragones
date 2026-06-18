@@ -2,22 +2,106 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { clearAuth } from "@/lib/auth";
-import type { LandingData } from "@/types";
+import { clearAuth, getToken, saveAuth } from "@/lib/auth";
+import type { LandingData, Role } from "@/types";
 
 function monthLabel(mes: string): string {
   const [year, month] = mes.split("-");
-  const date = new Date(Number(year), Number(month) - 1);
-  return date.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+  return new Date(Number(year), Number(month) - 1).toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric",
+  });
 }
 
+// ── Inline login form ──────────────────────────────────────────────────────────
+function LandingLogin({ onSuccess }: { onSuccess: () => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const result = await api.auth.landingLogin(username, password);
+      saveAuth(result.access_token, result.role as Role);
+      onSuccess();
+    } catch {
+      // If landing credentials fail, try admin (admin can also see landing)
+      try {
+        const result = await api.auth.adminLogin(username, password);
+        saveAuth(result.access_token, result.role as Role);
+        onSuccess();
+      } catch {
+        setError("Usuario o contraseña incorrectos");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dragon-900 via-dragon-800 to-purple-900">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="text-5xl mb-3">🐉</div>
+          <h1 className="text-2xl font-bold text-dragon-800">Aquí Hay Dragones</h1>
+          <p className="text-gray-500 text-sm mt-1">Mar del Plata · Retiro de juegos</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-dragon-500"
+              required
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-dragon-500"
+              required
+            />
+          </div>
+          {error && (
+            <p className="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-dragon-700 hover:bg-dragon-800 text-white font-semibold py-2 rounded-lg transition disabled:opacity-60"
+          >
+            {loading ? "Ingresando..." : "Ingresar"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Landing content ────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const router = useRouter();
+  const [authenticated, setAuthenticated] = useState(false);
   const [data, setData] = useState<LandingData | null>(null);
   const [months, setMonths] = useState<{ mes: string; nombre_juego: string }[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Check token on mount
+  useEffect(() => {
+    if (getToken()) setAuthenticated(true);
+  }, []);
 
   async function loadData(mes?: string) {
     setLoading(true);
@@ -25,17 +109,25 @@ export default function LandingPage() {
     try {
       const result = mes ? await api.landing.byMonth(mes) : await api.landing.current();
       setData(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar datos");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al cargar datos";
+      // Token expired or invalid — show login again
+      if (msg.includes("401") || msg.toLowerCase().includes("token") || msg.toLowerCase().includes("expirado")) {
+        clearAuth();
+        setAuthenticated(false);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
+    if (!authenticated) return;
     api.landing.months().then(setMonths).catch(() => {});
     loadData();
-  }, []);
+  }, [authenticated]);
 
   function handleMonthChange(mes: string) {
     setSelectedMonth(mes);
@@ -44,15 +136,21 @@ export default function LandingPage() {
 
   function handleLogout() {
     clearAuth();
-    router.push("/login");
+    setAuthenticated(false);
+    setData(null);
   }
 
+  // ── Not logged in: show inline login ────────────────────────────────────────
+  if (!authenticated) {
+    return <LandingLogin onSuccess={() => setAuthenticated(true)} />;
+  }
+
+  // ── Logged in: show landing ─────────────────────────────────────────────────
   const pending = data?.persons.filter((p) => p.estado === "pendiente").length ?? 0;
   const total = data?.persons.length ?? 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-gradient-to-r from-dragon-900 to-dragon-700 text-white shadow-lg">
         <div className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -118,11 +216,11 @@ export default function LandingPage() {
           )}
         </section>
 
-        {/* People table */}
         {error && (
           <p className="text-red-600 bg-red-50 rounded-lg px-4 py-3">{error}</p>
         )}
 
+        {/* People table */}
         {!loading && data && data.persons.length > 0 && (
           <section className="bg-white rounded-2xl shadow overflow-hidden">
             <table className="w-full text-sm">
@@ -169,7 +267,9 @@ export default function LandingPage() {
         )}
 
         {!loading && data && data.persons.length === 0 && data.nombre_juego && (
-          <p className="text-center text-gray-400 italic py-8">No hay personas inscriptas en este mes.</p>
+          <p className="text-center text-gray-400 italic py-8">
+            No hay personas inscriptas en este mes.
+          </p>
         )}
 
         {/* Organizers */}
