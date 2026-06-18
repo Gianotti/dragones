@@ -5,9 +5,11 @@ version: "3.9"
 #   ADMIN_USERNAME, ADMIN_PASSWORD
 #   LANDING_USERNAME, LANDING_PASSWORD
 #   SECRET_KEY (random string)
-#   NEXT_PUBLIC_API_URL       (e.g. https://api.dragones.codanthic.com)
-#   CORS_ORIGINS              (e.g. https://dragones.codanthic.com)
-#   CLOUDFLARE_TUNNEL_TOKEN   (Zero Trust → Tunnels → tu tunnel → token)
+#   NEXT_PUBLIC_API_URL  (e.g. https://api.dragones.codanthic.com)
+#   CORS_ORIGINS         (e.g. https://dragones.codanthic.com)
+#
+# Requiere una red externa compartida con cloudflared:
+#   docker network create tunnel   (si no existe ya)
 
 services:
   db:
@@ -29,8 +31,6 @@ services:
     build:
       context: ./backend
     restart: unless-stopped
-    ports:
-      - "8099:8000"
     environment:
       DATABASE_URL: postgresql://dragones:dragones@db:5432/dragones
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
@@ -39,6 +39,9 @@ services:
       LANDING_PASSWORD: ${LANDING_PASSWORD:-changeme123}
       SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
       CORS_ORIGINS: ${CORS_ORIGINS:-https://dragones.codanthic.com}
+    networks:
+      - default
+      - tunnel
     depends_on:
       db:
         condition: service_healthy
@@ -50,16 +53,17 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.dragones.codanthic.com}
     restart: unless-stopped
+    networks:
+      - default
+      - tunnel
     depends_on:
       - backend
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    depends_on:
-      - frontend
-      - backend
+networks:
+  default: {}
+  tunnel:
+    external: true
+    name: tunnel
 
 volumes:
   pgdata:
