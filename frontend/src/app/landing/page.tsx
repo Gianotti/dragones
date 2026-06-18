@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { clearAuth, getToken, saveAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 import type { LandingData, Role } from "@/types";
 
 type MonthEntry = { mes: string; nombre_juego: string; id: number };
 type ViewMode = "month" | "grid";
-type Theme = "light" | "dark";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -16,31 +16,6 @@ function monthLabel(mes: string, short = false) {
   const d = new Date(Number(y), Number(m) - 1);
   if (short) return d.toLocaleDateString("es-AR", { month: "short", year: "2-digit" });
   return d.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
-}
-
-// ── Theme hook ────────────────────────────────────────────────────────────────
-
-function useTheme(): [Theme, () => void] {
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("ahd-theme") as Theme | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial = saved ?? (prefersDark ? "dark" : "light");
-    setTheme(initial);
-    document.documentElement.classList.toggle("dark", initial === "dark");
-  }, []);
-
-  const toggle = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("ahd-theme", next);
-      document.documentElement.classList.toggle("dark", next === "dark");
-      return next;
-    });
-  }, []);
-
-  return [theme, toggle];
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -463,7 +438,7 @@ function GridView({
 export default function LandingPage() {
   const [theme, toggleTheme] = useTheme();
   const [authenticated, setAuthenticated] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const [months, setMonths] = useState<MonthEntry[]>([]);
   const [selectedMes, setSelectedMes] = useState<string | null>(null);
@@ -537,7 +512,7 @@ export default function LandingPage() {
   const ViewSwitcher = ({ mobile = false }: { mobile?: boolean }) =>
     mobile ? (
       <div className="flex border-t border-gray-100 dark:border-slate-800 sm:hidden">
-        {(["month", "grid"] as ViewMode[]).map((v) => (
+        {(["grid", "month"] as ViewMode[]).map((v) => (
           <button
             key={v}
             onClick={() => setViewMode(v)}
@@ -553,7 +528,7 @@ export default function LandingPage() {
       </div>
     ) : (
       <div className="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg p-0.5 text-xs font-semibold">
-        {(["month", "grid"] as ViewMode[]).map((v) => (
+        {(["grid", "month"] as ViewMode[]).map((v) => (
           <button
             key={v}
             onClick={() => setViewMode(v)}
