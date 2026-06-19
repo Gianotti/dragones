@@ -39,9 +39,9 @@ export const api = {
   },
 
   persons: {
-    list: () => request<import("@/types").Person[]>("/admin/persons/"),
+    list: () => request<import("@/types").Person[]>("/admin/persons"),
     create: (data: { nombre: string; apellido: string; email: string; whatsapp?: string }) =>
-      request<import("@/types").Person>("/admin/persons/", {
+      request<import("@/types").Person>("/admin/persons", {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -57,9 +57,9 @@ export const api = {
   },
 
   games: {
-    list: () => request<import("@/types").MonthlyGame[]>("/admin/games/"),
+    list: () => request<import("@/types").MonthlyGame[]>("/admin/games"),
     create: (data: { nombre_juego: string; mes: string }) =>
-      request<import("@/types").MonthlyGame>("/admin/games/", {
+      request<import("@/types").MonthlyGame>("/admin/games", {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -78,9 +78,9 @@ export const api = {
   },
 
   organizers: {
-    list: () => request<import("@/types").Organizer[]>("/admin/organizers/"),
+    list: () => request<import("@/types").Organizer[]>("/admin/organizers"),
     create: (data: { nombre: string; whatsapp: string }) =>
-      request<import("@/types").Organizer>("/admin/organizers/", {
+      request<import("@/types").Organizer>("/admin/organizers", {
         method: "POST",
         body: JSON.stringify(data),
       }),

@@ -20,12 +20,12 @@ class GameUpdate(BaseModel):
     nombre_juego: str
 
 
-@router.get("/")
+@router.get("")
 def list_games(session: Session = Depends(get_session)):
     return session.exec(select(MonthlyGame).order_by(MonthlyGame.mes.desc())).all()
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 def create_game(data: GameCreate, session: Session = Depends(get_session)):
     if not re.match(r"^\d{4}-\d{2}$", data.mes):
         raise HTTPException(status_code=400, detail="El mes debe tener formato YYYY-MM")

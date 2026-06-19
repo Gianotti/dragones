@@ -15,12 +15,12 @@ class OrganizerCreate(BaseModel):
     whatsapp: str
 
 
-@router.get("/")
+@router.get("")
 def list_organizers(session: Session = Depends(get_session)):
     return session.exec(select(Organizer)).all()
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 def create_organizer(data: OrganizerCreate, session: Session = Depends(get_session)):
     organizer = Organizer(**data.model_dump())
     session.add(organizer)

@@ -26,12 +26,12 @@ class PersonUpdate(BaseModel):
     activo: Optional[bool] = None
 
 
-@router.get("/")
+@router.get("")
 def list_persons(session: Session = Depends(get_session)):
     return session.exec(select(Person).order_by(Person.apellido, Person.nombre)).all()
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 def create_person(data: PersonCreate, session: Session = Depends(get_session)):
     person = Person(**data.model_dump())
     session.add(person)
