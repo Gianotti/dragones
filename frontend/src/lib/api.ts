@@ -68,6 +68,8 @@ export const api = {
         method: "PUT",
         body: JSON.stringify({ nombre_juego }),
       }),
+    delete: (id: number) =>
+      request<void>(`/admin/games/${id}`, { method: "DELETE" }),
   },
 
   pickups: {

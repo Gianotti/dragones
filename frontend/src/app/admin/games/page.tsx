@@ -70,6 +70,17 @@ export default function GamesPage() {
     }
   }
 
+  async function handleDelete(id: number) {
+    if (!confirm("¿Eliminar este juego? También se borrarán todos los retiros asociados.")) return;
+    setError("");
+    try {
+      await api.games.delete(id);
+      await loadGames();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al eliminar");
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
@@ -172,12 +183,20 @@ export default function GamesPage() {
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={() => { setEditingId(g.id); setEditNombre(g.nombre_juego); }}
-                        className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium cursor-pointer"
-                      >
-                        Editar nombre
-                      </button>
+                      <>
+                        <button
+                          onClick={() => { setEditingId(g.id); setEditNombre(g.nombre_juego); }}
+                          className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 font-medium cursor-pointer"
+                        >
+                          Editar nombre
+                        </button>
+                        <button
+                          onClick={() => handleDelete(g.id)}
+                          className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium cursor-pointer"
+                        >
+                          Eliminar
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

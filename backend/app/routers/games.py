@@ -59,3 +59,15 @@ def update_game(game_id: int, data: GameUpdate, session: Session = Depends(get_s
     session.commit()
     session.refresh(game)
     return game
+
+
+@router.delete("/{game_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_game(game_id: int, session: Session = Depends(get_session)):
+    game = session.get(MonthlyGame, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Juego no encontrado")
+    pickups = session.exec(select(PickupStatus).where(PickupStatus.game_id == game_id)).all()
+    for pickup in pickups:
+        session.delete(pickup)
+    session.delete(game)
+    session.commit()
